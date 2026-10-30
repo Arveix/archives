@@ -36,5 +36,11 @@
         ],
         "publishDate": "2026-10-31T02:08:59.290180",
         "content": "lorem ipsum dolor"
+    },
+    "new-note-testing": {
+        "title": "New Note testing",
+        "tags": [],
+        "publishDate": "2026-10-31T02:10:29.368443",
+        "content": ""
     }
 }
