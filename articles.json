@@ -30,7 +30,9 @@
     "test-note": {
         "title": "Test note",
         "tags": [
-            "test"
+            "test",
+            "new-note",
+            "more-test"
         ],
         "publishDate": "2026-10-31T02:08:59.290180",
         "content": "lorem ipsum dolor"
