@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Geo:ital@0;1&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Reenie+Beanie&family=Share+Tech+Mono&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'JetBrains Mono', monospace;
+  --font-main: 'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-heading: 'Geo', sans-serif;
+  --color-dark: #151414;
+  --color-darker: #0D0B0C;
+  --color-light: #f0e3de;
+  --color-offwhite: #9a9390;
+  --color-crimson: #A33D50;
+  --color-purple: #612D53;
+  --color-charcoal: #292524;
+}
+
+@layer base {
+
+  html,
+  body,
+  input,
+  button,
+  textarea,
+  select,
+  code,
+  pre {
+    font-family: var(--font-mono);
+  }
+
+  html,
+  body {
+    background: radial-gradient(circle, #9a939022 1px, transparent 1px) center / 20px 20px fixed;
+    @apply bg-darker;
+    @apply text-light;
+  }
+
+  a {
+    @apply underline;
+    @apply text-crimson;
+  }
+
+  a:hover {
+    @apply no-underline;
+  }
+
+  h1 {
+    font-family: var(--font-heading);
+    @apply text-3xl sm:text-4xl lg:text-[2.5rem] tracking-wide text-light leading-tight scroll-mt-24;
+  }
+
+  h2 {
+    font-family: var(--font-heading);
+    @apply text-2xl sm:text-[1.75rem] lg:text-3xl tracking-wide text-light mt-10 sm:mt-12 mb-2.5 sm:mb-3 first:mt-0 scroll-mt-24;
+  }
+
+  h3 {
+    @apply text-base sm:text-lg lg:text-xl font-bold text-light tracking-tight mt-8 sm:mt-9 mb-2 first:mt-0 scroll-mt-24;
+  }
+
+  h4 {
+    @apply text-sm sm:text-base font-bold text-light/95 tracking-tight mt-6 sm:mt-7 mb-1.5 first:mt-0 scroll-mt-24;
+  }
+
+  h5 {
+    @apply text-xs sm:text-sm font-bold text-light/90 tracking-tight mt-4 mb-2;
+  }
+
+  h6 {
+    @apply text-xs font-semibold text-light/80 tracking-tight mt-3 mb-1.5;
+  }
+}
