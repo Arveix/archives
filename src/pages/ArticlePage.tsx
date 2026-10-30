@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router";
 import {
   ArrowLeft,
   Calendar,
-  Tag,
+  Tag as TagIcon,
   Share2,
   Check,
   ArrowRight,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { fetchAllArticles, formatDisplayDate, type ArticleItem } from "../lib/articles";
 import MarkdownRenderer, { slugify } from "../components/MarkdownRenderer";
+import Tag from "../components/Tag";
 
 function extractHeadings(markdown: string) {
   const headingRegex = /^(#{1,3})\s+(.*)$/gm;
@@ -63,27 +64,8 @@ export default function ArticlePage() {
   const article = useMemo(() => {
     if (articles.length === 0) return null;
     if (slug) {
-      const normalized = slug.toLowerCase().trim();
-      const decoded = decodeURIComponent(slug).toLowerCase().trim();
-      return (
-        articles.find(
-          (a) =>
-            a.slug.toLowerCase() === normalized ||
-            a.slug.toLowerCase() === decoded
-        ) ||
-        articles.find(
-          (a) =>
-            a.title
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/(^-|-$)/g, "") === normalized ||
-            a.title
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/(^-|-$)/g, "") === decoded
-        ) ||
-        null
-      );
+      const decoded = decodeURIComponent(slug).toLowerCase();
+      return articles.find((a) => a.slug.toLowerCase() === decoded) || null;
     }
     return articles[0];
   }, [slug, articles]);
@@ -218,8 +200,14 @@ export default function ArticlePage() {
     );
   }
 
+  const hasToc = headings.length > 0;
+
   return (
-    <div className="w-full max-w-3xl lg:max-w-6xl xl:max-w-7xl mx-auto px-3.5 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8">
+    <div
+      className={`w-full mx-auto px-3.5 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8 ${
+        hasToc ? "max-w-3xl lg:max-w-6xl xl:max-w-7xl" : "max-w-3xl lg:max-w-4xl"
+      }`}
+    >
       {/* Unboxed Header / Site Navigation */}
       <header className="px-1 py-1 flex items-center justify-between">
         <div>
@@ -242,12 +230,11 @@ export default function ArticlePage() {
         </Link>
       </header>
 
-      {/* Main Two-Column Reading Layout */}
-      <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
-        {/* Left Sticky Article Meta & Table of Contents Sidebar (PC Only) */}
-        <aside className="hidden lg:block w-72 xl:w-80 shrink-0 sticky top-6 space-y-1">
-          {/* Dedicated Table of Contents Card */}
-          {headings.length > 0 && (
+      {/* Main Content Layout */}
+      <div className={hasToc ? "flex flex-col lg:flex-row gap-6 sm:gap-8 items-start" : ""}>
+        {/* Left Sticky Table of Contents Sidebar (rendered only when headings exist) */}
+        {hasToc && (
+          <aside className="hidden lg:block w-72 xl:w-80 shrink-0 sticky top-6">
             <div className="p-4 sm:p-5 bg-dark rounded-xl border border-charcoal space-y-3">
               <div className="flex items-center justify-between pb-3 border-b border-charcoal">
                 <div className="flex items-center gap-2">
@@ -265,15 +252,10 @@ export default function ArticlePage() {
                 {renderTocLinks()}
               </nav>
             </div>
-          )}
+          </aside>
+        )}
 
-          {/* Unboxed PC sidebar footnote */}
-          <footer className="ml-1.5 text-xs text-offwhite/50 px-1">
-            Archives by <span className="text-crimson font-medium">Arveix</span>
-          </footer>
-        </aside>
-
-        {/* Right Article Body Card */}
+        {/* Article Body Card */}
         <main className="w-full flex-1 min-w-0 p-5 sm:p-10 bg-dark rounded-xl border border-charcoal space-y-8">
           {/* Article Header Inside Main Box */}
           <div className="space-y-4 border-b border-charcoal/60 pb-8">
@@ -314,15 +296,10 @@ export default function ArticlePage() {
               {/* Row 2: Tags row */}
               {article.tags && article.tags.length > 0 && (
                 <div className="flex items-start gap-2">
-                  <Tag className="w-3.5 h-3.5 text-crimson shrink-0 mt-0.5" />
+                  <TagIcon className="w-3.5 h-3.5 text-crimson shrink-0 mt-0.5" />
                   <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                     {article.tags.map((t) => (
-                      <span
-                        key={t}
-                        className="inline-flex items-center text-[11px] rounded px-1.5 py-0.5 tracking-tight text-crimson border border-crimson/35 font-medium shadow-sm"
-                      >
-                        {t}
-                      </span>
+                      <Tag key={t} label={t} />
                     ))}
                   </div>
                 </div>
@@ -428,8 +405,8 @@ export default function ArticlePage() {
         </main>
       </div>
 
-      {/* Unboxed Mobile Footer */}
-      <footer className="lg:hidden text-center py-6 text-xs text-offwhite/50">
+      {/* Centered Footer */}
+      <footer className="text-center py-6 text-xs text-offwhite/50">
         Archives by <span className="text-crimson font-medium">Arveix</span>
       </footer>
     </div>

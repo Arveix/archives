@@ -3,11 +3,12 @@ import {
   Search,
   X,
   Calendar,
-  Tag,
+  Tag as TagIcon,
   RotateCcw,
   SlidersHorizontal,
   ChevronDown,
 } from "lucide-react";
+import Tag from "./Tag";
 
 interface SearchAndFilterProps {
   searchQuery: string;
@@ -55,7 +56,7 @@ export default function SearchAndFilter({
   );
 
   return (
-    <div className="space-y-3.5">
+    <div className="space-y-5">
       {/* Search Input Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/50 pointer-events-none" />
@@ -63,7 +64,7 @@ export default function SearchAndFilter({
           type="text"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search"
+          placeholder="Search..."
           className="w-full bg-darker/80 border border-charcoal rounded-lg pl-9 pr-9 py-2 text-sm text-light placeholder:text-offwhite/40 focus:border-crimson/60 focus:outline-none transition-colors"
         />
         {searchQuery && (
@@ -82,10 +83,11 @@ export default function SearchAndFilter({
         <button
           type="button"
           onClick={() => setIsMobileFiltersOpen((prev) => !prev)}
-          className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-colors cursor-pointer ${activeFiltersCount > 0 || isMobileFiltersOpen
-            ? "text-crimson border-crimson/40 font-medium"
-            : "text-offwhite/70 border-charcoal bg-darker/50 hover:text-light hover:border-charcoal/80"
-            }`}
+          className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-colors cursor-pointer ${
+            activeFiltersCount > 0 || isMobileFiltersOpen
+              ? "text-crimson border-crimson/40 font-medium"
+              : "text-offwhite/70 border-charcoal bg-darker/50 hover:text-light hover:border-charcoal/80"
+          }`}
           aria-expanded={isMobileFiltersOpen}
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -96,8 +98,9 @@ export default function SearchAndFilter({
             </span>
           )}
           <ChevronDown
-            className={`w-3.5 h-3.5 transition-transform duration-200 ${isMobileFiltersOpen ? "rotate-180" : ""
-              }`}
+            className={`w-3.5 h-3.5 transition-transform duration-200 ${
+              isMobileFiltersOpen ? "rotate-180" : ""
+            }`}
           />
         </button>
 
@@ -120,115 +123,105 @@ export default function SearchAndFilter({
         )}
       </div>
 
-      {/* Filters Body: Collapsible on mobile, always visible in desktop sidebar */}
+      {/* Filters Body */}
       <div
-        className={`${isMobileFiltersOpen ? "block" : "hidden lg:block"
-          } space-y-4 pt-1 lg:pt-0`}
+        className={`${
+          isMobileFiltersOpen ? "block" : "hidden lg:block"
+        } space-y-5 pt-1 lg:pt-0`}
       >
         {/* Date Filter */}
-        <div className="space-y-1.5 text-xs">
-          <div className="flex items-center gap-1.5 text-offwhite/60">
-            <Calendar className="w-3.5 h-3.5 text-crimson" />
-            <span>Date Range:</span>
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between text-offwhite/70">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-crimson" />
+              <span className="font-medium text-light/85">Date Range</span>
+            </div>
             {(startDate || endDate) && (
               <button
                 onClick={() => {
                   onStartDateChange(null);
                   onEndDateChange(null);
                 }}
-                className="text-[11px] text-crimson hover:underline ml-auto cursor-pointer"
+                className="text-[11px] text-crimson hover:underline cursor-pointer"
               >
-                Clear date
+                Clear
               </button>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 text-[11px] text-offwhite/60">
-              <span className="w-7 shrink-0">from</span>
-              <input
-                type="date"
-                value={startDate || ""}
-                max={endDate || undefined}
-                onChange={(e) => onStartDateChange(e.target.value || null)}
-                className={`inline-flex items-center text-[11px] rounded px-1.5 py-0.5 tracking-tight transition-colors cursor-pointer [color-scheme:dark] bg-transparent focus:outline-none focus:border-crimson/60 ${startDate
-                  ? "text-crimson border border-crimson/35 font-medium shadow-sm"
-                  : "text-offwhite/50 border border-charcoal/80 hover:text-crimson hover:border-crimson/25"
-                  }`}
-              />
-            </div>
-
-            <div className="flex items-center gap-1.5 text-[11px] text-offwhite/60">
-              <span className="w-7 shrink-0">to</span>
-              <input
-                type="date"
-                value={endDate || ""}
-                min={startDate || undefined}
-                onChange={(e) => onEndDateChange(e.target.value || null)}
-                className={`inline-flex items-center text-[11px] rounded px-1.5 py-0.5 tracking-tight transition-colors cursor-pointer [color-scheme:dark] bg-transparent focus:outline-none focus:border-crimson/60 ${endDate
-                  ? "text-crimson border border-crimson/35 font-medium shadow-sm"
-                  : "text-offwhite/50 border border-charcoal/80 hover:text-crimson hover:border-crimson/25"
-                  }`}
-              />
-            </div>
+          <div className="flex items-center gap-2 pt-0.5">
+            <input
+              type="date"
+              value={startDate || ""}
+              max={endDate || undefined}
+              onChange={(e) => onStartDateChange(e.target.value || null)}
+              className={`flex-1 min-w-0 text-xs rounded-lg px-2.5 py-1.5 tracking-tight transition-colors cursor-pointer [color-scheme:dark] bg-darker/60 focus:outline-none focus:border-crimson/60 ${
+                startDate
+                  ? "text-crimson border border-crimson/40 font-medium shadow-sm"
+                  : "text-offwhite/60 border border-charcoal hover:text-crimson hover:border-crimson/30"
+              }`}
+            />
+            <span className="text-xs text-offwhite/40 shrink-0 select-none px-0.5">to</span>
+            <input
+              type="date"
+              value={endDate || ""}
+              min={startDate || undefined}
+              onChange={(e) => onEndDateChange(e.target.value || null)}
+              className={`flex-1 min-w-0 text-xs rounded-lg px-2.5 py-1.5 tracking-tight transition-colors cursor-pointer [color-scheme:dark] bg-darker/60 focus:outline-none focus:border-crimson/60 ${
+                endDate
+                  ? "text-crimson border border-crimson/40 font-medium shadow-sm"
+                  : "text-offwhite/60 border border-charcoal hover:text-crimson hover:border-crimson/30"
+              }`}
+            />
           </div>
         </div>
 
         {/* Tags Filter */}
-        <div className="space-y-1.5 text-xs">
-          <div className="flex items-center gap-1.5 text-offwhite/60">
-            <Tag className="w-3.5 h-3.5 text-crimson" />
-            <span>Tags:</span>
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between text-offwhite/70">
+            <div className="flex items-center gap-1.5">
+              <TagIcon className="w-3.5 h-3.5 text-crimson" />
+              <span className="font-medium text-light/85">Tags</span>
+            </div>
             {selectedTags.length > 0 && (
               <button
                 onClick={onClearTags}
-                className="text-[11px] text-crimson hover:underline ml-auto"
+                className="text-[11px] text-crimson hover:underline cursor-pointer"
               >
-                Clear tags ({selectedTags.length})
+                Clear ({selectedTags.length})
               </button>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1.5 text-xs">
-            <button
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            <Tag
+              label="all"
+              isSelected={selectedTags.length === 0}
               onClick={onClearTags}
-              className={`inline-flex items-center text-[11px] rounded px-1.5 py-0.5 tracking-tight transition-colors cursor-pointer ${selectedTags.length === 0
-                ? "text-crimson border border-crimson/35 font-medium shadow-sm"
-                : "text-offwhite/50 border border-charcoal/80 hover:text-crimson hover:border-crimson/25"
-                }`}
-            >
-              all
-            </button>
-            {availableTags.map((tag) => {
-              const isSelected = selectedTags.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  onClick={() => onTagToggle(tag)}
-                  className={`inline-flex items-center text-[11px] rounded px-1.5 py-0.5 tracking-tight transition-colors cursor-pointer ${isSelected
-                    ? "text-crimson border border-crimson/35 font-medium shadow-sm"
-                    : "text-offwhite/50 border border-charcoal/80 hover:text-crimson hover:border-crimson/25"
-                    }`}
-                >
-                  {tag}
-                </button>
-              );
-            })}
+            />
+            {availableTags.map((tag) => (
+              <Tag
+                key={tag}
+                label={tag}
+                isSelected={selectedTags.includes(tag)}
+                onClick={() => onTagToggle(tag)}
+              />
+            ))}
           </div>
         </div>
 
         {/* Active Filter Summary Bar */}
-        <div className="flex items-center justify-between text-xs text-offwhite/60 pt-2.5 border-t border-charcoal/50">
+        <div className="flex items-center justify-between text-xs text-offwhite/60 pt-3 border-t border-charcoal/60">
           <span>
-            Showing {totalResults} of {totalArticles} articles
+            {totalResults} of {totalArticles} {totalArticles === 1 ? "article" : "articles"}
           </span>
           {isFiltered && (
             <button
               onClick={onReset}
-              className="flex items-center gap-1 text-crimson hover:underline text-xs cursor-pointer"
+              className="flex items-center gap-1.5 text-crimson hover:underline text-xs cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>Reset filters</span>
+              <span>Reset</span>
             </button>
           )}
         </div>

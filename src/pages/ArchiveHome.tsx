@@ -4,7 +4,6 @@ import SearchAndFilter from '../components/SearchAndFilter'
 import {
   fetchAllArticles,
   groupArticlesByYearMonth,
-  getArticleIsoDate,
   type ArticleItem,
   type YearGroup,
 } from '../lib/articles'
@@ -63,7 +62,7 @@ export default function ArchiveHome() {
   const filteredArticles = useMemo(() => {
     return articles.filter((article) => {
       // 1. Post-level ISO date comparison (YYYY-MM-DD)
-      const postDateISO = getArticleIsoDate(article)
+      const postDateISO = article.publishDate.slice(0, 10)
       const matchesDate =
         (!startDate || postDateISO >= startDate) &&
         (!endDate || postDateISO <= endDate)
@@ -111,8 +110,8 @@ export default function ArchiveHome() {
 
       <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
         {/* Left Sidebar on desktop, top of archive on mobile */}
-        <aside className="w-full lg:w-72 xl:w-80 lg:shrink-0 lg:sticky lg:top-6 space-y-1">
-          <div className="p-4 sm:p-6 bg-dark rounded-xl border border-charcoal">
+        <aside className="w-full lg:w-80 xl:w-88 lg:shrink-0 lg:sticky lg:top-6 space-y-1">
+          <div className="p-5 sm:p-6 bg-dark rounded-xl border border-charcoal">
             <SearchAndFilter
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -129,11 +128,6 @@ export default function ArchiveHome() {
               onReset={handleReset}
             />
           </div>
-
-          {/* Unboxed PC Footer beneath the Search Component */}
-          <footer className="ml-1.5 hidden lg:block text-xs text-offwhite/50 px-1">
-            Archives by <span className="text-crimson font-medium">Arveix</span>
-          </footer>
         </aside>
 
         {/* Main Archive Content */}
@@ -196,8 +190,8 @@ export default function ArchiveHome() {
         </main>
       </div>
 
-      {/* Mobile Page Footer */}
-      <footer className="lg:hidden text-center py-6 text-xs text-offwhite/50">
+      {/* Centered Page Footer */}
+      <footer className="text-center py-6 text-xs text-offwhite/50">
         Archives by <span className="text-crimson font-medium">Arveix</span>
       </footer>
 

@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import type { YearGroup } from "../lib/articles";
+import Tag from "./Tag";
 
 
 interface ArchiveProps {
@@ -50,19 +51,16 @@ export default function Archive({
                                 </h3>
 
                                 <div className="space-y-6 sm:space-y-7">
-                                    {month.posts.map((post) => {
-                                        const day = post.date.replace(/^[A-Za-z]+\s*/, "");
-                                        return (
-                                            <article
-                                                key={post.slug || `${post.date}-${post.title}`}
-                                                className="group flex items-start gap-3.5 sm:gap-4 min-w-0"
+                                    {month.posts.map((post) => (
+                                        <article
+                                            key={post.slug}
+                                            className="group flex items-start gap-3.5 sm:gap-4 min-w-0"
+                                        >
+                                            <time
+                                                className="w-6 shrink-0 text-right text-sm sm:text-base font-medium text-crimson/75 group-hover:text-crimson tabular-nums select-none transition-colors pt-0.5 sm:pt-0"
                                             >
-                                                <time
-                                                    className="w-6 shrink-0 text-right text-sm sm:text-base font-medium text-crimson/75 group-hover:text-crimson tabular-nums select-none transition-colors pt-0.5 sm:pt-0"
-                                                    title={post.date}
-                                                >
-                                                    {day}
-                                                </time>
+                                                {post.date}
+                                            </time>
 
                                                 <div className="min-w-0 flex-1">
                                                     <Link
@@ -74,28 +72,19 @@ export default function Archive({
 
                                                     {post.tags && post.tags.length > 0 && (
                                                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                                            {post.tags.map((tag) => {
-                                                                const isSelected = selectedTags.includes(tag);
-                                                                return (
-                                                                    <button
-                                                                        key={tag}
-                                                                        type="button"
-                                                                        onClick={() => onTagToggle?.(tag)}
-                                                                        className={`inline-flex items-center text-[11px] rounded px-1.5 py-0.5 tracking-tight transition-colors cursor-pointer ${isSelected
-                                                                            ? "text-crimson border border-crimson/35 font-medium shadow-sm"
-                                                                            : "text-offwhite/50 border border-charcoal/80 hover:text-crimson hover:border-crimson/25"
-                                                                            }`}
-                                                                    >
-                                                                        {tag}
-                                                                    </button>
-                                                                );
-                                                            })}
+                                                            {post.tags.map((tag) => (
+                                                                <Tag
+                                                                    key={tag}
+                                                                    label={tag}
+                                                                    isSelected={selectedTags.includes(tag)}
+                                                                    onClick={() => onTagToggle?.(tag)}
+                                                                />
+                                                            ))}
                                                         </div>
                                                     )}
                                                 </div>
                                             </article>
-                                        );
-                                    })}
+                                        ))}
                                 </div>
                             </section>
                         ))}
