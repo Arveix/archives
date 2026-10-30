@@ -1,23 +1,17 @@
-export interface ArticleMetadata {
-  date: string;
-  tags?: string[];
-  author?: string;
-  [key: string]: any;
-}
-
 export interface ArticleItem {
-  title: string;
   slug: string;
-  metadata: ArticleMetadata;
+  title: string;
+  tags: string[];
+  publishDate: string;
   content: string;
 }
 
 export interface Post {
   date: string;
   title: string;
-  slug?: string;
-  tags?: string[];
-  isoDate?: string;
+  slug: string;
+  tags: string[];
+  publishDate: string;
 }
 
 export interface MonthGroup {
@@ -33,12 +27,12 @@ export interface YearGroup {
 export interface ParsedDate {
   year: number;
   monthIndex: number; // 0 - 11
-  monthName: string;  // e.g. "October"
-  monthAbbr: string;  // e.g. "Oct"
-  day: number;        // e.g. 23
-  dayStr: string;     // e.g. "23" or "05"
-  displayDate: string;// e.g. "Oct 23"
-  isoDate: string;    // e.g. "2026-10-23"
+  monthName: string;
+  monthAbbr: string;
+  day: number;
+  dayStr: string;
+  displayDate: string; // e.g. "Oct 23"
+  isoDate: string;     // e.g. "2026-10-23"
   timestamp: number;
 }
 
@@ -52,43 +46,18 @@ export const MONTH_ABBRS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
 
-// In-memory cache for fetched articles
 let cachedArticles: ArticleItem[] | null = null;
 let fetchPromise: Promise<ArticleItem[]> | null = null;
 
-// Normalize incoming JSON objects (supporting Title / title, content / mainText / text)
-export function normalizeArticle(item: any): ArticleItem {
-  const title = item.title || item.Title || 'Untitled Article';
-  const slug =
-    item.slug ||
-    item.metadata?.slug ||
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
-  const metadata: ArticleMetadata = {
-    date: item.metadata?.date || item.date || item.Date || '',
-    tags: item.metadata?.tags || item.tags || item.Tags || [],
-    ...item.metadata,
-  };
-
-  const content = item.content || item.mainText || item.main_text || item.text || '';
-
-  return {
-    title,
-    slug,
-    metadata,
-    content,
-  };
+export function slugToTitle(slug: string): string {
+  if (!slug) return 'Untitled Article';
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
-/**
- * Robustly parse dates from articles in formats:
- * - "Oct 23, 2026" / "October 23, 2026"
- * - "2026-10-23" / "2026/10/23"
- * - "23 Oct 2026"
- */
 export function parseArticleDate(rawDate?: string): ParsedDate {
   const now = new Date();
   let year = now.getFullYear();
@@ -97,21 +66,17 @@ export function parseArticleDate(rawDate?: string): ParsedDate {
 
   if (rawDate && typeof rawDate === 'string') {
     const trimmed = rawDate.trim();
-
-    // Check for ISO format YYYY-MM-DD
     const isoMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
     if (isoMatch) {
       year = parseInt(isoMatch[1], 10);
       monthIndex = Math.max(0, Math.min(11, parseInt(isoMatch[2], 10) - 1));
       day = parseInt(isoMatch[3], 10);
     } else {
-      // Look for 4-digit year
       const yearMatch = trimmed.match(/\b(19\d\d|20\d\d)\b/);
       if (yearMatch) {
         year = parseInt(yearMatch[1], 10);
       }
 
-      // Check month name or abbreviation
       const lower = trimmed.toLowerCase();
       let foundMonth = false;
       for (let i = 0; i < 12; i++) {
@@ -125,7 +90,6 @@ export function parseArticleDate(rawDate?: string): ParsedDate {
         }
       }
 
-      // Day extraction: remove year, then look for 1 or 2 digits
       const withoutYear = trimmed.replace(/\b(19\d\d|20\d\d)\b/, '');
       const dayMatch = withoutYear.match(/\b([0-3]?\d)\b/);
       if (dayMatch) {
@@ -146,7 +110,14 @@ export function parseArticleDate(rawDate?: string): ParsedDate {
   const dayStr = String(day).padStart(2, '0');
   const displayDate = `${monthAbbr} ${dayStr}`;
   const isoDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${dayStr}`;
-  const timestamp = new Date(year, monthIndex, day).getTime();
+
+  let timestamp = new Date(year, monthIndex, day).getTime();
+  if (rawDate && typeof rawDate === 'string') {
+    const directDate = new Date(rawDate.trim());
+    if (!isNaN(directDate.getTime())) {
+      timestamp = directDate.getTime();
+    }
+  }
 
   return {
     year,
@@ -161,29 +132,37 @@ export function parseArticleDate(rawDate?: string): ParsedDate {
   };
 }
 
-/**
- * Return ISO date string (YYYY-MM-DD) for an article
- */
-export function getArticleIsoDate(article: ArticleItem): string {
-  return parseArticleDate(article.metadata?.date).isoDate;
+export function formatDisplayDate(rawDate?: string): string {
+  if (!rawDate) return '';
+  const parsed = parseArticleDate(rawDate);
+  return `${parsed.monthName} ${parsed.day}, ${parsed.year}`;
 }
 
-/**
- * Group a list of ArticleItems by Year and Month into YearGroup[]
- * Sorted descending by Year, Month, and Date.
- */
+export function getArticleIsoDate(article: ArticleItem): string {
+  return parseArticleDate(article.publishDate).isoDate;
+}
+
+export function normalizeArticle(entry: any, slug: string): ArticleItem {
+  return {
+    slug,
+    title: entry?.title || slugToTitle(slug),
+    tags: Array.isArray(entry?.tags) ? entry.tags : [],
+    publishDate: entry?.publishDate || '',
+    content: entry?.content || '',
+  };
+}
+
 export function groupArticlesByYearMonth(articles: ArticleItem[]): YearGroup[] {
-  // Year -> MonthIndex -> Post[]
   const yearMap = new Map<number, Map<number, Post[]>>();
 
   for (const article of articles) {
-    const parsed = parseArticleDate(article.metadata?.date);
+    const parsed = parseArticleDate(article.publishDate);
     const post: Post = {
       date: parsed.displayDate,
       title: article.title,
       slug: article.slug,
-      tags: article.metadata.tags || [],
-      isoDate: parsed.isoDate,
+      tags: article.tags,
+      publishDate: article.publishDate,
     };
 
     if (!yearMap.has(parsed.year)) {
@@ -196,21 +175,18 @@ export function groupArticlesByYearMonth(articles: ArticleItem[]): YearGroup[] {
     monthMap.get(parsed.monthIndex)!.push(post);
   }
 
-  // Sort years descending
   const sortedYears = Array.from(yearMap.keys()).sort((a, b) => b - a);
 
   return sortedYears.map((year) => {
     const monthMap = yearMap.get(year)!;
-    // Sort months descending (e.g. 11 down to 0)
     const sortedMonthIndices = Array.from(monthMap.keys()).sort((a, b) => b - a);
 
     const months: MonthGroup[] = sortedMonthIndices.map((mIdx) => {
       const posts = monthMap.get(mIdx)!;
-      // Sort posts within month descending by ISO date / day
       posts.sort((a, b) => {
-        const dateA = a.isoDate || '';
-        const dateB = b.isoDate || '';
-        return dateB.localeCompare(dateA);
+        const timeA = parseArticleDate(a.publishDate).timestamp;
+        const timeB = parseArticleDate(b.publishDate).timestamp;
+        return timeB - timeA;
       });
 
       return {
@@ -226,10 +202,6 @@ export function groupArticlesByYearMonth(articles: ArticleItem[]): YearGroup[] {
   });
 }
 
-/**
- * Fetch all articles from /articles.json in the public directory at runtime.
- * Doesn't require recompilation when new articles are added to public/articles.json.
- */
 export async function fetchAllArticles(forceRefresh = false): Promise<ArticleItem[]> {
   if (cachedArticles && !forceRefresh) {
     return cachedArticles;
@@ -241,25 +213,39 @@ export async function fetchAllArticles(forceRefresh = false): Promise<ArticleIte
 
   fetchPromise = (async () => {
     try {
-      const res = await fetch('/articles.json', {
+      const res = await fetch(`${import.meta.env.BASE_URL}articles.json`, {
         headers: {
           'Cache-Control': 'no-cache',
         },
       });
 
       if (!res.ok) {
-        throw new Error(`Failed to fetch /articles.json: ${res.status}`);
+        throw new Error(`Failed to fetch articles.json: ${res.status}`);
       }
 
       const data = await res.json();
-      if (!Array.isArray(data)) {
-        throw new Error('/articles.json must return a JSON array');
+      let articles: ArticleItem[] = [];
+
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        articles = Object.entries(data).map(([slug, entry]) =>
+          normalizeArticle(entry, slug)
+        );
+      } else if (Array.isArray(data)) {
+        articles = data.map((item: any) =>
+          normalizeArticle(item, item.slug || '')
+        );
       }
 
-      cachedArticles = data.map(normalizeArticle);
+      articles.sort((a, b) => {
+        const timeA = parseArticleDate(a.publishDate).timestamp;
+        const timeB = parseArticleDate(b.publishDate).timestamp;
+        return timeB - timeA;
+      });
+
+      cachedArticles = articles;
       return cachedArticles;
     } catch (err) {
-      console.error('Error fetching /articles.json:', err);
+      console.error('Error fetching articles.json:', err);
       return cachedArticles || [];
     } finally {
       fetchPromise = null;
@@ -269,20 +255,26 @@ export async function fetchAllArticles(forceRefresh = false): Promise<ArticleIte
   return fetchPromise;
 }
 
-/**
- * Fetch a single article by slug from the dynamically fetched articles
- */
 export async function fetchArticleBySlug(slug: string): Promise<ArticleItem | undefined> {
   const articles = await fetchAllArticles();
   const normalized = slug.toLowerCase().trim();
+  const decoded = decodeURIComponent(slug).toLowerCase().trim();
   return (
-    articles.find((a) => a.slug.toLowerCase() === normalized) ||
+    articles.find(
+      (a) =>
+        a.slug.toLowerCase() === normalized ||
+        a.slug.toLowerCase() === decoded
+    ) ||
     articles.find(
       (a) =>
         a.title
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '') === normalized
+          .replace(/(^-|-$)/g, '') === normalized ||
+        a.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '') === decoded
     )
   );
 }

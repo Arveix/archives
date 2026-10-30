@@ -12,7 +12,7 @@ export default defineConfig({
   base: '/archives/',
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
 })

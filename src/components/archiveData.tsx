@@ -1,21 +1,5 @@
 import { Link } from "react-router";
-
-export interface Post {
-    date: string;
-    title: string;
-    slug?: string;
-    tags?: string[];
-}
-
-export interface MonthGroup {
-    name: string;
-    posts: Post[];
-}
-
-export interface YearGroup {
-    year: number;
-    months: MonthGroup[];
-}
+import type { YearGroup } from "../lib/articles";
 
 
 interface ArchiveProps {
@@ -70,7 +54,7 @@ export default function Archive({
                                         const day = post.date.replace(/^[A-Za-z]+\s*/, "");
                                         return (
                                             <article
-                                                key={`${post.date}-${post.title}`}
+                                                key={post.slug || `${post.date}-${post.title}`}
                                                 className="group flex items-start gap-3.5 sm:gap-4 min-w-0"
                                             >
                                                 <time
@@ -82,13 +66,7 @@ export default function Archive({
 
                                                 <div className="min-w-0 flex-1">
                                                     <Link
-                                                        to={`/article/${encodeURIComponent(
-                                                            post.slug ||
-                                                            post.title
-                                                                .toLowerCase()
-                                                                .replace(/[^a-z0-9]+/g, "-")
-                                                                .replace(/(^-|-$)/g, "")
-                                                        )}`}
+                                                        to={`/article/${encodeURIComponent(post.slug)}`}
                                                         className="block min-w-0 leading-normal text-light/85 no-underline hover:text-crimson hover:underline focus-visible:text-crimson focus-visible:underline transition-colors sm:text-base sm:leading-normal"
                                                     >
                                                         {post.title}

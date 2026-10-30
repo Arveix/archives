@@ -45,7 +45,7 @@ export default function ArchiveHome() {
   const availableTags = useMemo(() => {
     const tagsSet = new Set<string>()
     articles.forEach((a) => {
-      a.metadata.tags?.forEach((t) => tagsSet.add(t))
+      a.tags?.forEach((t) => tagsSet.add(t))
     })
     return Array.from(tagsSet).sort()
   }, [articles])
@@ -68,19 +68,19 @@ export default function ArchiveHome() {
         (!startDate || postDateISO >= startDate) &&
         (!endDate || postDateISO <= endDate)
 
-      // 2. Search query matches title, slug, date, or tags
+      // 2. Search query matches title, slug, publishDate, or tags
       const q = searchQuery.trim().toLowerCase()
       const matchesSearch =
         q === '' ||
         article.title.toLowerCase().includes(q) ||
         article.slug.toLowerCase().includes(q) ||
-        (article.metadata.date && article.metadata.date.toLowerCase().includes(q)) ||
-        article.metadata.tags?.some((t) => t.toLowerCase().includes(q))
+        article.publishDate.toLowerCase().includes(q) ||
+        article.tags.some((t) => t.toLowerCase().includes(q))
 
       // 3. Tag filter
       const matchesTags =
         selectedTags.length === 0 ||
-        (article.metadata.tags && selectedTags.some((st) => article.metadata.tags!.includes(st)))
+        article.tags.some((st) => selectedTags.includes(st))
 
       return matchesDate && matchesSearch && matchesTags
     })

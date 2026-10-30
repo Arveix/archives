@@ -10,7 +10,7 @@ import {
   AlignLeft,
   ChevronDown,
 } from "lucide-react";
-import { fetchAllArticles, type ArticleItem } from "../lib/articles";
+import { fetchAllArticles, formatDisplayDate, type ArticleItem } from "../lib/articles";
 import MarkdownRenderer, { slugify } from "../components/MarkdownRenderer";
 
 function extractHeadings(markdown: string) {
@@ -64,14 +64,23 @@ export default function ArticlePage() {
     if (articles.length === 0) return null;
     if (slug) {
       const normalized = slug.toLowerCase().trim();
+      const decoded = decodeURIComponent(slug).toLowerCase().trim();
       return (
-        articles.find((a) => a.slug.toLowerCase() === normalized) ||
+        articles.find(
+          (a) =>
+            a.slug.toLowerCase() === normalized ||
+            a.slug.toLowerCase() === decoded
+        ) ||
         articles.find(
           (a) =>
             a.title
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, "-")
-              .replace(/(^-|-$)/g, "") === normalized
+              .replace(/(^-|-$)/g, "") === normalized ||
+            a.title
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/(^-|-$)/g, "") === decoded
         ) ||
         null
       );
@@ -274,10 +283,10 @@ export default function ArticlePage() {
             <div className="space-y-5 text-xs text-offwhite pt-1">
               {/* Row 1: Date on the left, Share on the right */}
               <div className="flex items-center justify-between gap-4">
-                {article.metadata.date ? (
+                {article.publishDate ? (
                   <div className="flex items-center gap-2 text-offwhite/80">
                     <Calendar className="w-3.5 h-3.5 text-crimson shrink-0" />
-                    <time className="text-light">{article.metadata.date}</time>
+                    <time className="text-light">{formatDisplayDate(article.publishDate)}</time>
                   </div>
                 ) : (
                   <div />
@@ -303,11 +312,11 @@ export default function ArticlePage() {
               </div>
 
               {/* Row 2: Tags row */}
-              {article.metadata.tags && article.metadata.tags.length > 0 && (
+              {article.tags && article.tags.length > 0 && (
                 <div className="flex items-start gap-2">
                   <Tag className="w-3.5 h-3.5 text-crimson shrink-0 mt-0.5" />
                   <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                    {article.metadata.tags.map((t) => (
+                    {article.tags.map((t) => (
                       <span
                         key={t}
                         className="inline-flex items-center text-[11px] rounded px-1.5 py-0.5 tracking-tight text-crimson border border-crimson/35 font-medium shadow-sm"
