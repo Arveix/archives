@@ -39,7 +39,10 @@
     },
     "new-note-testing": {
         "title": "New Note testing",
-        "tags": [],
+        "tags": [
+            "more-tags",
+            "aaaaa"
+        ],
         "publishDate": "2026-10-31T02:10:29.368443",
         "content": ""
     }
