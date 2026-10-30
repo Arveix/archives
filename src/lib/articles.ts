@@ -85,7 +85,7 @@ export async function fetchAllArticles(forceRefresh = false): Promise<ArticleIte
   fetchPromise = (async () => {
     try {
       const res = await fetch('https://raw.githubusercontent.com/Arveix/archives/refs/heads/main/public/articles.json', {
-        headers: { "Cache-Control": "no-cache" },
+        headers: { "Cache-Control": "no-store" },
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
