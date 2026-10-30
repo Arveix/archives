@@ -36,5 +36,14 @@
         ],
         "publishDate": "2026-10-31T02:08:59.290180",
         "content": "lorem ipsum dolor"
+    },
+    "new-note-testing": {
+        "title": "New Note testing",
+        "tags": [
+            "more-tags",
+            "aaaaa"
+        ],
+        "publishDate": "2026-10-31T02:11:10.970726",
+        "content": "alsjflasjlasjf Starst typsaighsd;glkasndf alskjfasldkfja;sld fjsa;lfj"
     }
 }
