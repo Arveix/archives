@@ -118,7 +118,7 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
 }
 
 interface Block {
-  type: "heading" | "p" | "code" | "blockquote" | "ul" | "ol" | "hr";
+  type: "heading" | "p" | "code" | "blockquote" | "ul" | "ol" | "hr" | "spacer";
   level?: number;
   text?: string;
   lang?: string;
@@ -207,9 +207,18 @@ function parseBlocks(markdown: string): Block[] {
       continue;
     }
 
-    // Empty Lines
+    // Empty Lines - preserve extra intentional line breaks as spacers
     if (!line.trim()) {
-      i++;
+      let emptyCount = 0;
+      while (i < lines.length && !lines[i].trim()) {
+        emptyCount++;
+        i++;
+      }
+      if (emptyCount > 1) {
+        for (let k = 0; k < emptyCount - 1; k++) {
+          blocks.push({ type: "spacer" });
+        }
+      }
       continue;
     }
 
@@ -228,7 +237,7 @@ function parseBlocks(markdown: string): Block[] {
       pLines.push(lines[i]);
       i++;
     }
-    blocks.push({ type: "p", text: pLines.join(" ") });
+    blocks.push({ type: "p", text: pLines.join("\n") });
   }
 
   return blocks;
@@ -277,7 +286,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
             return (
               <p
                 key={idx}
-                className="text-sm leading-relaxed text-light/85 mb-4"
+                className="text-sm leading-relaxed text-light/85 mb-4 whitespace-pre-line"
               >
                 {renderInline(block.text || "")}
               </p>
@@ -296,11 +305,14 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
             return (
               <blockquote
                 key={idx}
-                className="p-3.5 sm:p-4 rounded-lg bg-darker border-l-2 border-crimson text-xs sm:text-sm text-offwhite my-4 space-y-1"
+                className="p-3.5 sm:p-4 rounded-lg bg-darker border-l-2 border-crimson text-xs sm:text-sm text-offwhite my-4 space-y-1 whitespace-pre-line"
               >
                 {renderInline(block.text || "")}
               </blockquote>
             );
+
+          case "spacer":
+            return <div key={idx} className="h-4" />;
 
           case "ul":
             return (

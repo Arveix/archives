@@ -36,7 +36,7 @@ export default function Archive({
         <div className="space-y-12 sm:space-y-16">
             {data?.map((yearGroup) => (
                 <section key={yearGroup.year}>
-                    <h2 className="text-3xl sm:text-5xl font-heading tracking-wide mt-0 mb-6 border-b border-charcoal pb-3 sm:mb-8">
+                    <h2 className="text-5xl sm:text-6xl font-heading tracking-wide mt-0 mb-6 border-b border-charcoal pb-3 sm:mb-8">
                         {yearGroup.year}
                     </h2>
 
