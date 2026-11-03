@@ -1,8 +1,26 @@
-import { useState, type ReactNode } from "react";
+import { useState, isValidElement, type ReactNode } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { Copy, Check, Terminal } from "lucide-react";
 
 interface MarkdownRendererProps {
   content: string;
+}
+
+// Strip Obsidian comments (%% ... %%) and HTML comments (<!-- ... -->), preserving code blocks
+export function stripComments(content: string): string {
+  const codeBlocks: string[] = [];
+  const textWithoutCode = content.replace(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`)/g, (match) => {
+    codeBlocks.push(match);
+    return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+  });
+
+  const stripped = textWithoutCode
+    .replace(/%%[\s\S]*?%%/g, "")
+    .replace(/<!--[\s\S]*?-->/g, "");
+
+  return stripped.replace(/__CODE_BLOCK_(\d+)__/g, (_, idx) => codeBlocks[Number(idx)]);
 }
 
 // Convert heading text to clean slug id
@@ -13,63 +31,14 @@ export function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-// Render inline elements: `code`, **bold**, *italic*, [link](url)
-function renderInline(text: string): ReactNode[] {
-  const tokenRegex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g;
-  const parts = text.split(tokenRegex);
-
-  return parts.map((part, index) => {
-    if (!part) return null;
-
-    // Inline code
-    if (part.startsWith("`") && part.endsWith("`")) {
-      return (
-        <code
-          key={index}
-          className="text-crimson bg-darker border border-charcoal/80 rounded px-1.5 py-0.5 text-[12px]"
-        >
-          {part.slice(1, -1)}
-        </code>
-      );
-    }
-
-    // Bold
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return (
-        <strong key={index} className="text-light font-bold">
-          {part.slice(2, -2)}
-        </strong>
-      );
-    }
-
-    // Italic
-    if (part.startsWith("*") && part.endsWith("*")) {
-      return (
-        <em key={index} className="text-offwhite italic">
-          {part.slice(1, -1)}
-        </em>
-      );
-    }
-
-    // Link [text](url)
-    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-    if (linkMatch) {
-      return (
-        <a
-          key={index}
-          href={linkMatch[2]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-crimson underline hover:no-underline"
-        >
-          {linkMatch[1]}
-        </a>
-      );
-    }
-
-    // Plain text
-    return part;
-  });
+function getNodeText(node: ReactNode): string {
+  if (!node) return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(getNodeText).join("");
+  if (isValidElement(node) && node.props && typeof node.props === "object" && "children" in node.props) {
+    return getNodeText((node.props as { children?: ReactNode }).children);
+  }
+  return "";
 }
 
 // Code Block with Copy Button
@@ -117,238 +86,150 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
   );
 }
 
-interface Block {
-  type: "heading" | "p" | "code" | "blockquote" | "ul" | "ol" | "hr" | "spacer";
-  level?: number;
-  text?: string;
-  lang?: string;
-  content?: string;
-  items?: string[];
-}
-
-function parseBlocks(markdown: string): Block[] {
-  const lines = markdown.split(/\r?\n/);
-  const blocks: Block[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Fenced Code Block
-    if (line.trim().startsWith("```")) {
-      const lang = line.trim().slice(3).trim();
-      const codeLines: string[] = [];
-      i++;
-      while (i < lines.length && !lines[i].trim().startsWith("```")) {
-        codeLines.push(lines[i]);
-        i++;
-      }
-      i++; // skip closing ```
-      blocks.push({
-        type: "code",
-        lang: lang || "text",
-        content: codeLines.join("\n"),
-      });
-      continue;
-    }
-
-    // Horizontal Rule
-    if (line.trim() === "---" || line.trim() === "***" || line.trim() === "___") {
-      blocks.push({ type: "hr" });
-      i++;
-      continue;
-    }
-
-    // Headings
-    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
-    if (headingMatch) {
-      blocks.push({
-        type: "heading",
-        level: headingMatch[1].length,
-        text: headingMatch[2],
-      });
-      i++;
-      continue;
-    }
-
-    // Blockquote
-    if (line.trim().startsWith(">")) {
-      const quoteLines: string[] = [];
-      while (i < lines.length && lines[i].trim().startsWith(">")) {
-        quoteLines.push(lines[i].replace(/^>\s?/, ""));
-        i++;
-      }
-      blocks.push({
-        type: "blockquote",
-        text: quoteLines.join("\n"),
-      });
-      continue;
-    }
-
-    // Unordered List
-    if (/^\s*[-*+]\s+/.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
-        items.push(lines[i].replace(/^\s*[-*+]\s+/, ""));
-        i++;
-      }
-      blocks.push({ type: "ul", items });
-      continue;
-    }
-
-    // Ordered List
-    if (/^\s*\d+\.\s+/.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
-        items.push(lines[i].replace(/^\s*\d+\.\s+/, ""));
-        i++;
-      }
-      blocks.push({ type: "ol", items });
-      continue;
-    }
-
-    // Empty Lines - preserve extra intentional line breaks as spacers
-    if (!line.trim()) {
-      let emptyCount = 0;
-      while (i < lines.length && !lines[i].trim()) {
-        emptyCount++;
-        i++;
-      }
-      if (emptyCount > 1) {
-        for (let k = 0; k < emptyCount - 1; k++) {
-          blocks.push({ type: "spacer" });
-        }
-      }
-      continue;
-    }
-
-    // Paragraph (accumulate consecutive non-empty lines)
-    const pLines: string[] = [];
-    while (
-      i < lines.length &&
-      lines[i].trim() &&
-      !lines[i].trim().startsWith("```") &&
-      !lines[i].match(/^(#{1,6})\s+/) &&
-      !lines[i].trim().startsWith(">") &&
-      !/^\s*[-*+]\s+/.test(lines[i]) &&
-      !/^\s*\d+\.\s+/.test(lines[i]) &&
-      lines[i].trim() !== "---"
-    ) {
-      pLines.push(lines[i]);
-      i++;
-    }
-    blocks.push({ type: "p", text: pLines.join("\n") });
-  }
-
-  return blocks;
-}
-
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
-  const blocks = parseBlocks(content);
+  const cleanContent = stripComments(content);
 
   return (
     <article>
-      {blocks.map((block, idx) => {
-        switch (block.type) {
-          case "heading": {
-            const text = block.text || "";
-            const id = slugify(text);
-
-            if (block.level === 1) {
-              return (
-                <h1 key={idx} id={id} className="mt-8 mb-3">
-                  {renderInline(text)}
-                </h1>
-              );
-            }
-            if (block.level === 2) {
-              return (
-                <h2 key={idx} id={id}>
-                  {renderInline(text)}
-                </h2>
-              );
-            }
-            if (block.level === 3) {
-              return (
-                <h3 key={idx} id={id}>
-                  {renderInline(text)}
-                </h3>
-              );
-            }
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={{
+          h1({ children }) {
             return (
-              <h4 key={idx} id={id}>
-                {renderInline(text)}
-              </h4>
+              <h1 id={slugify(getNodeText(children))} className="mt-8 mb-3">
+                {children}
+              </h1>
             );
-          }
-
-          case "p":
+          },
+          h2({ children }) {
+            return <h2 id={slugify(getNodeText(children))}>{children}</h2>;
+          },
+          h3({ children }) {
+            return <h3 id={slugify(getNodeText(children))}>{children}</h3>;
+          },
+          h4({ children }) {
+            return <h4 id={slugify(getNodeText(children))}>{children}</h4>;
+          },
+          h5({ children }) {
+            return <h5 id={slugify(getNodeText(children))}>{children}</h5>;
+          },
+          h6({ children }) {
+            return <h6 id={slugify(getNodeText(children))}>{children}</h6>;
+          },
+          p({ children }) {
             return (
-              <p
-                key={idx}
-                className="text-sm leading-relaxed text-light/85 mb-4 whitespace-pre-line"
-              >
-                {renderInline(block.text || "")}
+              <p className="text-sm leading-relaxed text-light/85 mb-4">
+                {children}
               </p>
             );
-
-          case "code":
+          },
+          pre({ children }) {
+            if (isValidElement(children)) {
+              const codeProps = children.props as { className?: string; children?: ReactNode };
+              const match = /language-(\w+)/.exec(codeProps?.className || "");
+              const lang = match ? match[1] : "";
+              const code = String(codeProps?.children || "").replace(/\n$/, "");
+              return <CodeBlock lang={lang} code={code} />;
+            }
+            return <pre>{children}</pre>;
+          },
+          code({ children, ...props }) {
             return (
-              <CodeBlock
-                key={idx}
-                lang={block.lang || "text"}
-                code={block.content || ""}
-              />
-            );
-
-          case "blockquote":
-            return (
-              <blockquote
-                key={idx}
-                className="p-3.5 sm:p-4 rounded-lg bg-darker border-l-2 border-crimson text-xs sm:text-sm text-offwhite my-4 space-y-1 whitespace-pre-line"
+              <code
+                className="text-crimson bg-darker border border-charcoal/80 rounded px-1.5 py-0.5 text-[12px]"
+                {...props}
               >
-                {renderInline(block.text || "")}
+                {children}
+              </code>
+            );
+          },
+          blockquote({ children }) {
+            return (
+              <blockquote className="p-3.5 sm:p-4 rounded-lg bg-darker border-l-2 border-crimson text-xs sm:text-sm text-offwhite my-4 space-y-1">
+                {children}
               </blockquote>
             );
-
-          case "spacer":
-            return <div key={idx} className="h-4" />;
-
-          case "ul":
+          },
+          ul({ children }) {
             return (
-              <ul
-                key={idx}
-                className="space-y-1.5 pl-5 list-disc marker:text-crimson text-sm text-light/85 my-3.5"
-              >
-                {block.items?.map((item, itemIdx) => (
-                  <li key={itemIdx} className="leading-relaxed">
-                    {renderInline(item)}
-                  </li>
-                ))}
+              <ul className="space-y-1.5 pl-5 list-disc marker:text-crimson text-sm text-light/85 my-3.5">
+                {children}
               </ul>
             );
-
-          case "ol":
+          },
+          ol({ children }) {
             return (
-              <ol
-                key={idx}
-                className="space-y-1.5 pl-5 list-decimal marker:text-crimson text-sm text-light/85 my-3.5"
-              >
-                {block.items?.map((item, itemIdx) => (
-                  <li key={itemIdx} className="leading-relaxed">
-                    {renderInline(item)}
-                  </li>
-                ))}
+              <ol className="space-y-1.5 pl-5 list-decimal marker:text-crimson text-sm text-light/85 my-3.5">
+                {children}
               </ol>
             );
-
-          case "hr":
-            return <hr key={idx} className="border-charcoal/60 my-8 sm:my-10" />;
-
-          default:
-            return null;
-        }
-      })}
+          },
+          li({ children }) {
+            return <li className="leading-relaxed">{children}</li>;
+          },
+          a({ href, children, ...props }) {
+            const isExternal = href?.startsWith("http://") || href?.startsWith("https://");
+            return (
+              <a
+                href={href}
+                target={isExternal ? "_blank" : undefined}
+                rel={isExternal ? "noopener noreferrer" : undefined}
+                className="text-crimson underline hover:no-underline"
+                {...props}
+              >
+                {children}
+              </a>
+            );
+          },
+          hr() {
+            return <hr className="border-charcoal/60 my-8 sm:my-10" />;
+          },
+          strong({ children }) {
+            return <strong className="text-light font-bold">{children}</strong>;
+          },
+          em({ children }) {
+            return <em className="text-offwhite italic">{children}</em>;
+          },
+          del({ children }) {
+            return <del className="text-offwhite/60 line-through">{children}</del>;
+          },
+          img({ src, alt, ...props }) {
+            return (
+              <img
+                src={src}
+                alt={alt || ""}
+                loading="lazy"
+                className="rounded-lg border border-charcoal my-6 max-w-full h-auto"
+                {...props}
+              />
+            );
+          },
+          table({ children }) {
+            return (
+              <div className="overflow-x-auto my-6 rounded-lg border border-charcoal bg-darker">
+                <table className="w-full text-left text-xs sm:text-sm text-light/90 border-collapse">
+                  {children}
+                </table>
+              </div>
+            );
+          },
+          thead({ children }) {
+            return (
+              <thead className="bg-dark border-b border-charcoal text-offwhite uppercase text-[11px] tracking-wider">
+                {children}
+              </thead>
+            );
+          },
+          th({ children }) {
+            return <th className="px-4 py-2.5 font-semibold text-light">{children}</th>;
+          },
+          td({ children }) {
+            return <td className="px-4 py-2.5 border-b border-charcoal/50">{children}</td>;
+          },
+        }}
+      >
+        {cleanContent}
+      </ReactMarkdown>
     </article>
   );
 }

@@ -83,13 +83,20 @@ export async function fetchAllArticles(forceRefresh = false): Promise<ArticleIte
   if (fetchPromise && !forceRefresh) return fetchPromise;
 
   fetchPromise = (async () => {
-    const requestUrl = new Request('https://raw.githubusercontent.com/Arveix/archives/refs/heads/main/public/articles.json', {
-      method: 'GET',
-      headers: new Headers(), // Creates a blank slate, erasing any framework-injected default headers
-      cache: 'no-cache'
-    });
+    
     try {
+      const requestUrl = new Request('https://raw.githubusercontent.com/Arveix/archives/refs/heads/main/public/articles.json', {
+        method: 'GET',
+        headers: new Headers(), // Creates a blank slate, erasing any framework-injected default headers
+        cache: 'no-cache'
+      });
+
       const res = await fetch(requestUrl);
+
+      // try {
+      //   const res = await fetch(`${import.meta.env.BASE_URL}/articles.json`, {
+      //     headers: { "Cache-Control": "no-cache" },
+      //   });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
