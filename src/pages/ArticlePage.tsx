@@ -14,18 +14,94 @@ import { fetchAllArticles, formatDisplayDate, type ArticleItem } from "../lib/ar
 import MarkdownRenderer, { slugify, stripComments } from "../components/MarkdownRenderer";
 import Tag from "../components/Tag";
 
-function extractHeadings(markdown: string) {
-  const headingRegex = /^(#{1,3})\s+(.*)$/gm;
-  const headings: { level: number; text: string; id: string }[] = [];
-  let match: RegExpExecArray | null;
+interface HeadingItem {
+  level: number;
+  text: string;
+  id: string;
+  depth: number;
+}
 
+function extractHeadings(markdown: string): HeadingItem[] {
   const cleanMarkdown = stripComments(markdown);
-  while ((match = headingRegex.exec(cleanMarkdown)) !== null) {
-    const text = match[2].trim();
+  const lines = cleanMarkdown.split(/\r?\n/);
+
+  const rawHeadings: {
+    level: number;
+    text: string;
+    id: string;
+    blankLinesBefore: number;
+  }[] = [];
+
+  let blankLinesCount = 0;
+  let inCodeBlock = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Toggle fenced code blocks to ignore code comments starting with #
+    if (trimmed.startsWith("```") || trimmed.startsWith("~~~")) {
+      inCodeBlock = !inCodeBlock;
+      blankLinesCount = 0;
+      continue;
+    }
+
+    if (inCodeBlock) {
+      blankLinesCount = 0;
+      continue;
+    }
+
+    if (trimmed === "") {
+      blankLinesCount++;
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (headingMatch) {
+      const text = headingMatch[2].replace(/\s+#+\s*$/, "").trim();
+      const level = headingMatch[1].length;
+      rawHeadings.push({
+        level,
+        text,
+        id: slugify(text),
+        blankLinesBefore: blankLinesCount,
+      });
+    }
+
+    blankLinesCount = 0;
+  }
+
+  // Smaller headings under a bigger heading are considered under that heading,
+  // unless separated by a blank space of 4 or more lines (which resets to top level).
+  const stack: { level: number; depth: number }[] = [];
+  const headings: HeadingItem[] = [];
+
+  for (const h of rawHeadings) {
+    let depth = 0;
+
+    if (h.blankLinesBefore >= 4) {
+      stack.length = 0;
+      depth = 0;
+      stack.push({ level: h.level, depth: 0 });
+    } else {
+      while (stack.length > 0 && stack[stack.length - 1].level >= h.level) {
+        stack.pop();
+      }
+
+      if (stack.length === 0) {
+        depth = 0;
+      } else {
+        depth = stack[stack.length - 1].depth + 1;
+      }
+
+      stack.push({ level: h.level, depth });
+    }
+
     headings.push({
-      level: match[1].length,
-      text,
-      id: slugify(text),
+      level: h.level,
+      text: h.text,
+      id: h.id,
+      depth,
     });
   }
 
@@ -138,7 +214,14 @@ export default function ArticlePage() {
   const renderTocLinks = () =>
     headings.map((h, i) => {
       const isActive = activeId === h.id;
-      const isH3 = h.level === 3;
+      const indentClass =
+        h.depth === 1
+          ? "ml-3.5 text-xs"
+          : h.depth === 2
+          ? "ml-7 text-xs"
+          : h.depth >= 3
+          ? "ml-10 text-xs"
+          : "text-sm font-medium";
 
       return (
         <a
@@ -153,11 +236,11 @@ export default function ArticlePage() {
               window.history.replaceState(null, "", `#${h.id}`);
             }
           }}
-          className={`block rounded-lg px-2.5 py-1.5 tracking-tight transition-colors text-left no-underline leading-snug cursor-pointer ${isH3 ? "ml-3 text-xs" : "text-sm font-medium"
-            } ${isActive
+          className={`block rounded-lg px-2.5 py-1.5 tracking-tight transition-colors text-left no-underline leading-snug cursor-pointer ${indentClass} ${
+            isActive
               ? "text-crimson font-medium shadow-sm bg-darker/50"
               : "text-offwhite/70 hover:text-crimson hover:bg-darker/50"
-            }`}
+          }`}
         >
           {h.text}
         </a>
