@@ -162,7 +162,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
           },
           blockquote({ children }) {
             return (
-              <blockquote className="p-3.5 sm:p-4 rounded-lg bg-darker border-l-2 border-crimson text-xs sm:text-sm text-offwhite my-4 space-y-1">
+              <blockquote className="p-3.5 sm:p-4 rounded-lg bg-darker border-l-2 border-crimson text-xs sm:text-sm text-offwhite my-4 space-y-1 [&>*:last-child]:mb-0">
                 {children}
               </blockquote>
             );
