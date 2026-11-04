@@ -131,7 +131,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
           },
           p({ children }) {
             return (
-              <p className="text-sm leading-relaxed text-light/85 mb-4">
+              <p className="text-sm leading-relaxed text-light/85 mb-4 [&:has(+ul)]:mb-1.5 [&:has(+ol)]:mb-1.5">
                 {children}
               </p>
             );
@@ -167,22 +167,32 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
               </blockquote>
             );
           },
-          ul({ children }) {
+          ul({ node, children, ...props }) {
             return (
-              <ul className="space-y-1.5 pl-5 list-disc marker:text-crimson text-sm text-light/85 my-3.5">
+              <ul
+                {...props}
+                className="space-y-1.5 pl-5 list-disc marker:text-crimson text-sm text-light/85 mt-1.5 mb-4 [&>li>ul]:mt-1.5 [&>li>ul]:mb-0 [&>li>ol]:mt-1.5 [&>li>ol]:mb-0"
+              >
                 {children}
               </ul>
             );
           },
-          ol({ children }) {
+          ol({ node, children, ...props }) {
             return (
-              <ol className="space-y-1.5 pl-5 list-decimal marker:text-crimson text-sm text-light/85 my-3.5">
+              <ol
+                {...props}
+                className="space-y-1.5 pl-5 list-decimal marker:text-crimson text-sm text-light/85 mt-1.5 mb-4 [&>li>ul]:mt-1.5 [&>li>ul]:mb-0 [&>li>ol]:mt-1.5 [&>li>ol]:mb-0"
+              >
                 {children}
               </ol>
             );
           },
-          li({ children }) {
-            return <li className="leading-relaxed">{children}</li>;
+          li({ node, children, ...props }) {
+            return (
+              <li {...props} className="leading-relaxed">
+                {children}
+              </li>
+            );
           },
           a({ href, children, ...props }) {
             const isExternal = href?.startsWith("http://") || href?.startsWith("https://");
