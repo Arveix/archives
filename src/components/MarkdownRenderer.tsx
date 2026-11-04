@@ -2,6 +2,8 @@ import { useState, isValidElement, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github-dark.css";
 import { Copy, Check, Terminal } from "lucide-react";
 
 interface MarkdownRendererProps {
@@ -42,11 +44,19 @@ function getNodeText(node: ReactNode): string {
 }
 
 // Code Block with Copy Button
-function CodeBlock({ lang, code }: { lang: string; code: string }) {
+function CodeBlock({
+  lang,
+  rawCode,
+  children,
+}: {
+  lang: string;
+  rawCode: string;
+  children: ReactNode;
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(code);
+    navigator.clipboard.writeText(rawCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -79,8 +89,10 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
         </button>
       </div>
 
-      <pre className="p-4 sm:p-5 text-xs sm:text-sm text-light/90 overflow-x-auto leading-relaxed">
-        <code>{code}</code>
+      <pre className="p-4 sm:p-5 text-xs sm:text-sm text-light/90 overflow-x-auto leading-relaxed !bg-transparent">
+        <code className={`hljs ${lang ? `language-${lang}` : ""} !bg-transparent !p-0 font-mono`}>
+          {children}
+        </code>
       </pre>
     </div>
   );
@@ -93,6 +105,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
     <article>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
+        rehypePlugins={[rehypeHighlight]}
         components={{
           h1({ children }) {
             return (
@@ -128,8 +141,12 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
               const codeProps = children.props as { className?: string; children?: ReactNode };
               const match = /language-(\w+)/.exec(codeProps?.className || "");
               const lang = match ? match[1] : "";
-              const code = String(codeProps?.children || "").replace(/\n$/, "");
-              return <CodeBlock lang={lang} code={code} />;
+              const rawCode = getNodeText(codeProps?.children).replace(/\n$/, "");
+              return (
+                <CodeBlock lang={lang} rawCode={rawCode}>
+                  {codeProps?.children}
+                </CodeBlock>
+              );
             }
             return <pre>{children}</pre>;
           },
