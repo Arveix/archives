@@ -11,7 +11,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { fetchAllArticles, formatDisplayDate, type ArticleItem } from "../lib/articles";
-import MarkdownRenderer, { slugify, stripComments } from "../components/MarkdownRenderer";
+import MarkdownRenderer, { slugify, stripComments, stripMarkdownFormatting } from "../components/MarkdownRenderer";
 import Tag from "../components/Tag";
 
 interface HeadingItem {
@@ -58,7 +58,8 @@ function extractHeadings(markdown: string): HeadingItem[] {
 
     const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
     if (headingMatch) {
-      const text = headingMatch[2].replace(/\s+#+\s*$/, "").trim();
+      const rawHeadingText = headingMatch[2].replace(/\s+#+\s*$/, "").trim();
+      const text = stripMarkdownFormatting(rawHeadingText);
       const level = headingMatch[1].length;
       rawHeadings.push({
         level,

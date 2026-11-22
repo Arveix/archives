@@ -25,6 +25,18 @@ export function stripComments(content: string): string {
   return stripped.replace(/__CODE_BLOCK_(\d+)__/g, (_, idx) => codeBlocks[Number(idx)]);
 }
 
+// Strip inline markdown formatting (bold, italic, links, code, strikethrough)
+export function stripMarkdownFormatting(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, "$1")
+    .replace(/(?:^|\s)_(.*?)_(?:$|\s)/g, (match, p1) => match.replace(`_${p1}_`, p1))
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .trim();
+}
+
 // Convert heading text to clean slug id
 export function slugify(text: string): string {
   return text
